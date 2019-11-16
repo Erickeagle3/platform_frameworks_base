@@ -4533,6 +4533,20 @@ public final class Settings {
         public static final Validator LOCKSCREEN_CLOCK_SELECTION_VALIDATOR =
                 new SettingsValidators.InclusiveIntegerRangeValidator(0, 9);
 
+
+        /**
+         * Center the lockscreen text clock
+         * @hide
+         */
+        public static final String CENTER_TEXT_CLOCK = "center_text_clock";
+
+
+        /**
+         * align the lockscreen weather & slice view to left
+         * @hide
+         */
+        public static final String LEFT_ALIGN_VIEW = "left_align_view";
+
         /**
          * Whether to hide the items underneath the lockscreen clock
          * @hide

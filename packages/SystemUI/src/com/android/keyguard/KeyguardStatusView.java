@@ -25,9 +25,11 @@ import android.content.ContentResolver;
 import android.content.res.AccentUtils;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.database.ContentObserver;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.RemoteException;
@@ -44,6 +46,7 @@ import android.util.Slog;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.GridLayout;
 import android.widget.RelativeLayout;
 import android.widget.LinearLayout;
@@ -99,6 +102,8 @@ public class KeyguardStatusView extends GridLayout implements
     private boolean mShowInfo;
     private int mClockSelection;
     private int mDateSelection;
+    private boolean mIsCenterAligned;
+    private boolean mIsLeftAligned;
 
     // Date styles paddings
     private int mDateVerPadding;
@@ -511,11 +516,11 @@ public class KeyguardStatusView extends GridLayout implements
         if (info == null) {
 
             final ContentResolver resolver = mContext.getContentResolver();
-            boolean mClockSelection = Settings.System.getIntForUser(resolver,
-                    Settings.System.LOCKSCREEN_CLOCK_SELECTION, 0, UserHandle.USER_CURRENT) == 9;
+            final boolean mOwnerAlign = Settings.System.getIntForUser(resolver,
+                    Settings.System.LEFT_ALIGN_VIEW, 1, UserHandle.USER_CURRENT) == 1;
 
             // If text style clock, align the textView to start else keep it center.
-            if (mClockSelection) {
+            if (mOwnerAlign) {
                 mOwnerInfo.setPaddingRelative((int) mContext.getResources()
                     .getDimension(R.dimen.custom_clock_left_padding) + 8, 0, 0, 0);
                 mOwnerInfo.setGravity(Gravity.START);
@@ -689,6 +694,14 @@ public class KeyguardStatusView extends GridLayout implements
     private void updateSettings() {
         final ContentResolver resolver = getContext().getContentResolver();
 
+	RelativeLayout.LayoutParams textClockParams = new RelativeLayout.LayoutParams(
+			RelativeLayout.LayoutParams.WRAP_CONTENT,
+			RelativeLayout.LayoutParams.WRAP_CONTENT);
+	textClockParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+
+	int leftPadding = (int) getResources().getDimension(R.dimen.custom_clock_left_padding);
+        int topPadding = (int) getResources().getDimension(R.dimen.custom_clock_top_margin);
+
         mShowClock = Settings.System.getIntForUser(resolver,
                 Settings.System.LOCKSCREEN_CLOCK, 1, UserHandle.USER_CURRENT) == 1;
         mShowInfo = Settings.System.getIntForUser(resolver,
@@ -698,6 +711,17 @@ public class KeyguardStatusView extends GridLayout implements
         mDateSelection = Settings.System.getIntForUser(resolver,
                 Settings.System.LOCKSCREEN_DATE_SELECTION, 0, UserHandle.USER_CURRENT);
 
+        mIsCenterAligned = Settings.System.getIntForUser(resolver,
+                Settings.System.CENTER_TEXT_CLOCK, 0, UserHandle.USER_CURRENT) == 1;
+
+        if (mTextClock != null && mIsCenterAligned) {
+	    mTextClock.setGravity(Gravity.CENTER);
+	    mTextClock.setLayoutParams(textClockParams);
+	    mTextClock.setPaddingRelative(0, topPadding, 0, 0);
+	} else {
+	    mTextClock.setGravity(Gravity.START);
+	    mTextClock.setPaddingRelative(leftPadding, topPadding, 0, 0);
+	}
         setStyle();
     }
 
@@ -1693,5 +1717,35 @@ public class KeyguardStatusView extends GridLayout implements
         public boolean shouldFinish(View view) {
             return view == getParent();
         }
+	}
+
+    private CustomSettingsObserver mCustomSettingsObserver = new CustomSettingsObserver(mHandler);
+    private class CustomSettingsObserver extends ContentObserver {
+
+        CustomSettingsObserver(Handler handler) {
+            super(handler);
+        }
+
+        void observe() {
+            ContentResolver resolver = mContext.getContentResolver();
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.LEFT_ALIGN_VIEW),
+                    false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.CENTER_TEXT_CLOCK),
+                    false, this, UserHandle.USER_ALL);
+        }
+
+		@Override
+        public void onChange(boolean selfChange, Uri uri) {
+            if (uri.equals(Settings.System.getUriFor(
+                    Settings.System.LEFT_ALIGN_VIEW))) {
+                updateOwnerInfo();
+				updateAll();
+            } else if (uri.equals(Settings.System.getUriFor(
+                    Settings.System.CENTER_TEXT_CLOCK))) {
+                updateAll();
+		}
     }
+}
 }

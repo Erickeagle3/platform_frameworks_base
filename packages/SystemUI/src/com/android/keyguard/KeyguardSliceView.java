@@ -26,12 +26,14 @@ import android.arch.lifecycle.Observer;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.database.ContentObserver;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.UserHandle;
+import android.os.Handler;
 import android.provider.Settings;
 import android.text.Layout;
 import android.text.TextUtils;
@@ -181,8 +183,7 @@ public class KeyguardSliceView extends LinearLayout implements View.OnClickListe
         }
 
         final ContentResolver resolver = mContext.getContentResolver();
-        boolean mClockSelection = Settings.System.getIntForUser(resolver,
-                Settings.System.LOCKSCREEN_CLOCK_SELECTION, 0, UserHandle.USER_CURRENT) == 9;
+        boolean mClockSelection = Settings.System.getIntForUser(resolver, Settings.System.LEFT_ALIGN_VIEW, 1, UserHandle.USER_CURRENT) == 1;
 
         ListContent lc = new ListContent(getContext(), mSlice);
         mHasHeader = lc.hasHeader();
